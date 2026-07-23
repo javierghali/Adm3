@@ -11,7 +11,7 @@ getgenv().VO_CONFIG = {
     KeepPetFarm = false, -- If true, will switch back when PetFarmList targets appear
     EggName = {"Egg Name"},  -- Priority order: first egg tried, then second, etc.
     PetFarmList = {}, -- Ordered pet names: age all non-FG of first name, then second, etc.; fallback if none available
-    PrioritizePet = "2D Kitty","Tealwood Monster",
+    PrioritizePet = "Tealwood Monster",
 
     -- === EVENT ===
     PrioritizeCraft = "Tealwood Monster Bait",  -- "Rainbow Trout" | "Tealwood Monster Bait" | nil (auto). AutoFish always runs.
@@ -58,10 +58,10 @@ getgenv().VO_CONFIG = {
 
     -- === AUTO TRADE ===
     AutoTrade = true,
-    ReceiverUsernames = {Exauddd7},{Exauddd4},{Exauddd},{Exauddd2},{Exauddd3},{Exauddd5},{Exauddd6},{Exauddd8},{Exauddd9}
+    ReceiverUsernames = {"Exauddd7","Exauddd4","Exauddd","Exauddd2","Exauddd3","Exauddd5","Exauddd6","Exauddd8","Exauddd9"}
     TradeItemList = {
          pets = {"",""}
-        toys = {"Paint Sealer",}
+        toys = {"Paint Sealer"}
     }, -- Per category: { pets = {"Dog","Neon Cat"}, food = {}, toys = {}, ... } — use "ALL" in a category to allow that whole category (pets still gated by TradePetType for bare names)
     TradePetType = {"ALL"},       -- Only applies to pets: "ALL", "Mega", "Neon", "Regular", "Neon_FG", "Regular_FG" — not used for food/toys/etc.; inline prefixes on pet strings (e.g. "Mega Dog") bypass this
 
