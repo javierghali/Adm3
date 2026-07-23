@@ -9,7 +9,7 @@ getgenv().VO_CONFIG = {
     PetFarm = false, -- Third mode: farm pets from PetFarmList in order (natural task-aging)
     KeepEggFarm = false, -- If true, will keep trying to hatch eggs even when no bucks
     KeepPetFarm = false, -- If true, will switch back when PetFarmList targets appear
-    EggName = {"Garden Egg"}, -- Ganti "Egg Name" dengan nama telur asli
+    EggName = {}, -- Ganti "Egg Name" dengan nama telur asli
     PetFarmList = {}, -- Ordered pet names: age all non-FG of first name, then second, etc.
     PrioritizePet = "Tealwood Monster",
 
