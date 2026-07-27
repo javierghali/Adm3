@@ -52,7 +52,7 @@ local CONFIG = {
     WINTERHUB = {
         -- Let the WinterHub app hop you to the next server automatically.
         -- Leave off if you're not using WinterHub.
-        enabled = false,
+        enabled = true,
         -- If no new trade comes in for this many seconds, tell WinterHub the
         -- server is done so it hops. Raise this if it hops before your bots
         -- have finished sending.
