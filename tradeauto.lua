@@ -4,7 +4,7 @@ local CONFIG = {
     MASTER_ENABLED = true,
     FORCE_SETTINGS = { enabled = true, also_force_giving = true },
     AUTO_ACCEPT = { enabled = true, poll = 0.25, refire_every = 0.5 },
-    WINTERHUB = { enabled = true, idle_hop_seconds = 6, heartbeat = 1 },
+    WINTERHUB = { enabled = true, idle_hop_seconds = 12, heartbeat = 5 },
     WEBHOOK = { enabled = false, url = "", report = "received" },
     DEBUG = false,
 }
