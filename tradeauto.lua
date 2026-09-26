@@ -137,6 +137,10 @@ local function run()
             and visible_dialog_text("NEVER TRADE ITEMS FOR BUCKS")
             and visible_dialog_text("OKAY") then
             response = "Okay"
+        elseif visible_dialog_text("THIS TRADE SEEMS UNBALANCED")
+            and visible_dialog_text("TRADING ARE BANNABLE")
+            and visible_dialog_text("NEXT") then
+            response = "Next"
         else
             return
         end
