@@ -4,7 +4,7 @@ local CONFIG = {
     MASTER_ENABLED = true,
     FORCE_SETTINGS = { enabled = true, also_force_giving = true },
     AUTO_ACCEPT = { enabled = true, poll = 0.25, refire_every = 0.5 },
-    WINTERHUB = { enabled = true, idle_hop_seconds = 12, heartbeat = 5 },
+    WINTERHUB = { enabled = true, idle_hop_seconds = 12, heartbeat = 5, hop_after_success = true },
     WEBHOOK = { enabled = false, url = "", report = "received" },
     DEBUG = false,
 }
@@ -218,12 +218,15 @@ local function run()
     local last_app, last_stage, last_fire, in_trade = nil, nil, 0, false
     local completing, pending_received, pending_given, pending_partner = false, nil, nil, nil
     local trade_count, last_items = 0, nil
+    local hop_ready = false
+    local last_write = 0
     local function reset_trade()
         last_stage, last_fire, in_trade, completing = nil, 0, false, false
         pending_received, pending_given, pending_partner = nil, nil, nil
     end
     local function step_trade()
         if not CONFIG.AUTO_ACCEPT.enabled then in_trade = false return end
+        if hop_ready then return end
         local apps = ui()
         local app = apps and apps.TradeApp
         if not app then return end -- UI may be loading; don't infer completion.
@@ -233,11 +236,17 @@ local function run()
         end
         local state = app:_get_local_trade_state()
         if not state then
-            if last_stage == "confirmation" and completing then
+            if last_stage == "confirmation" and completing
+                and (#(pending_received or {}) + #(pending_given or {}) > 0) then
                 trade_count = trade_count + 1
                 last_items = pending_received
                 webhook(pending_received, pending_given, pending_partner)
                 activity()
+                if CONFIG.WINTERHUB.enabled and CONFIG.WINTERHUB.hop_after_success then
+                    hop_ready = true
+                    last_write = 0
+                    log("trade finished with items; requesting next server")
+                end
             end
             reset_trade()
             return
@@ -253,21 +262,26 @@ local function run()
                 pending_received, pending_given = snapshot(partner.items), snapshot(mine.items)
                 local other = (state.sender == LP) and state.recipient or state.sender
                 pending_partner = typeof(other) == "Instance" and other.Name or nil
-                if mine.confirmed and partner.confirmed then completing = true end
+                if mine.confirmed and partner.confirmed
+                    and (#pending_received + #pending_given > 0) then completing = true end
             end
         end
         if os.clock() - last_fire < CONFIG.AUTO_ACCEPT.refire_every then return end
         last_fire = os.clock()
-        if stage == "negotiation" then app:_on_accept_pressed()
-        elseif stage == "confirmation" then app:_on_confirm_pressed() end
+        if stage == "negotiation" then
+            local partner = app:_get_partner_offer()
+            if partner and #(partner.items or {}) > 0 then app:_on_accept_pressed() end
+        elseif stage == "confirmation" then
+            local partner = app:_get_partner_offer()
+            if partner and #(partner.items or {}) > 0 then app:_on_confirm_pressed() end
+        end
     end
     local file = LP.Name .. "_winteraddons.json"
-    local last_write = 0
     local function write_status()
         local cfg = CONFIG.WINTERHUB
         if not cfg.enabled or os.clock() - last_write < cfg.heartbeat then return end
         last_write = os.clock()
-        local status = (not in_trade and os.clock() - last_activity > cfg.idle_hop_seconds) and "completed" or "active"
+        local status = (hop_ready or (not in_trade and os.clock() - last_activity > cfg.idle_hop_seconds)) and "completed" or "active"
         local counts, order = {}, {}
         for _, item in ipairs(last_items or {}) do
             local name = label(item)
