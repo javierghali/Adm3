@@ -107,6 +107,43 @@ local function run()
         log("trade dialog hooked")
         return true
     end
+    -- The hook only sees future dialogs. Answer an already open ticket only
+    -- while the game's visible trade-request dialog is on screen.
+    local forced_dialog, forced_ticket
+    local function visible_trade_request()
+        local gui = LP:FindFirstChildOfClass("PlayerGui")
+        if not gui then return false end
+        for _, child in ipairs(gui:GetDescendants()) do
+            if child:IsA("TextLabel") or child:IsA("TextButton") then
+                local words = string.upper(tostring(child.Text or "")):gsub("%s+", " ")
+                if string.find(words, "SENT YOU A TRADE REQUEST", 1, true) then
+                    local node, visible = child, true
+                    while node and node ~= gui do
+                        if node:IsA("GuiObject") and not node.Visible then visible = false break end
+                        if node:IsA("ScreenGui") and not node.Enabled then visible = false break end
+                        node = node.Parent
+                    end
+                    if visible then return true end
+                end
+            end
+        end
+        return false
+    end
+    local function answer_open_trade_request()
+        if not visible_trade_request() then return end
+        local apps = ui()
+        local dialog = apps and apps.DialogApp
+        if not dialog or not dialog.force_response_signal then return end
+        local count = tonumber(dialog.ticket_count) or 0
+        local done = tonumber(dialog.completed_ticket) or 0
+        if count <= done then return end
+        local ticket = done + 1
+        if forced_dialog == dialog and forced_ticket == ticket then return end
+        dialog.force_response_signal:Fire(ticket, table.pack("Accept"))
+        forced_dialog, forced_ticket = dialog, ticket
+        activity()
+        log("accepted visible trade request", ticket)
+    end
     local function snapshot(items)
         local out = {}
         for _, item in ipairs(items or {}) do
@@ -236,6 +273,7 @@ local function run()
     while true do
         local ok, err = pcall(function()
             if CONFIG.AUTO_ACCEPT.enabled and not hook_ready() then install_hook() end
+            if CONFIG.AUTO_ACCEPT.enabled then answer_open_trade_request() end
             if not settings_done and (not CONFIG.AUTO_ACCEPT.enabled or hook_ready()) then
                 settings_done = force_settings()
             end
