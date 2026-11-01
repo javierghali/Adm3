@@ -1,160 +1,221 @@
 
--- ZEKEHUB | TRADE LICENSE MODE
--- All farming disabled
+-- GET TRADE LICENSE | ADOPT ME
+-- Standalone: No ZekeHub, No Farming
 
-getgenv().Config = {
+repeat task.wait(0.2) until game:IsLoaded()
 
-    Dashboard = {
-        Enabled = true,
-        SyncConfig = false,
-        GroupName = "vps1",
-    },
+local Players = game:GetService("Players")
+local RS = game:GetService("ReplicatedStorage")
+local player = Players.LocalPlayer
 
-    Settings = {
-        AutoShowUI = true,
-        ShowOverlay = false,
-        ReduceGraphics = false,
-        FPSCap = 0,
-        LureId = "ice_dimension_2025_ice_soup_bait",
-        TradeInvites = "Everyone",
-    },
+while not player do
+    task.wait(0.2)
+    player = Players.LocalPlayer
+end
 
-    BabyFarm = false,
-    AutoCertificate = false,
+local env = (type(getgenv) == "function"
+    and getgenv()) or _G
 
-    PetFarm = {
-        Enabled = false,
-        FarmEggs = false,
-        BuyEggs = false,
-        EggTypes = {},
-        BuyEggType = "any",
-        MaxPets = 1,
-        FarmUntilFullGrown = false,
-        PrioritizeFriendship = false,
-        SelectiveFarm = false,
-        SelectedPetTypes = {},
-    },
+if env.__GetTradeLicenseRunning then
+    warn("[GET-LICENSE] Already running")
+    return
+end
 
-    EventFarm = {
-        Halloween = {
-            CandyPile = false,
-            StrayCat = false,
-            Crypt = false,
-            PigeonNest = false,
-            GhostGallery = false,
-            Hauntlet = false,
-            Spotlight = false,
-            Shoebill = false,
-            WhereBear = false,
-        },
-    },
+env.__GetTradeLicenseRunning = true
 
-    TaskExclusion = {
-        Enabled = false,
-        ExcludedTasks = {},
-    },
+local LOG_FILE = "GetTradeLicense.log"
 
-    PetPen = {
-        Enabled = false,
-        Eggs = {},
-        Pets = {},
-        Priority = {"egg", "neon", "regular"},
-        Excluded = {},
-    },
+local function log(level, message)
+    local line = ("[GET-LICENSE][%s] %s")
+        :format(level, tostring(message))
 
-    AutoPotion = {
-        Enabled = false,
-        SelectedPets = {},
-        PotionVersionFilter = {},
-    },
+    if level == "ERROR" or level == "FAIL" then
+        warn(line)
+    else
+        print(line)
+    end
 
-    AutoNeon = {
-        Enabled = false,
-        MakeMega = false,
-        NeonAll = false,
-        SelectedPets = {},
-        MaxPerType = {},
-    },
+    if type(appendfile) == "function" then
+        pcall(function()
+            if type(isfile) == "function"
+                and not isfile(LOG_FILE)
+                and type(writefile) == "function" then
+                writefile(LOG_FILE, "")
+            end
 
-    AutoRecycle = {
-        Enabled = false,
-        RarityFilter = {},
-        Pets = {},
-        Keep = {},
-        Excluded = {},
-    },
+            appendfile(
+                LOG_FILE,
+                os.date("%Y-%m-%d %H:%M:%S ")
+                    .. line .. "\n"
+            )
+        end)
+    end
+end
 
-    AutoTrade = {
-        Enabled = false,
-        AutoAcceptTrades = false,
-        AutoLeaveAfterTrades = false,
-        Usernames = {},
-        TradeMode = "all",
-        Categories = {},
-        Items = {},
-        ItemCounts = {},
-        GlobalPetFilter = {
-            Versions = {},
-            Ages = {},
-        },
-        PetFilters = {},
-    },
+local function main()
+    log("START", "User=" .. player.Name)
 
-    AutoPay = {
-        Enabled = false,
-        TargetPlayer = {},
-        Methods = {},
-    },
+    local fsysObject = RS:WaitForChild("Fsys", 30)
+    assert(fsysObject, "Fsys not found")
 
-    AutoBuy = {
-        Enabled = false,
-        SelectedItems = {},
-        BuyAmounts = {},
-    },
+    local fsys = require(fsysObject).load
+    assert(type(fsys) == "function",
+        "Fsys.load unavailable")
 
-    AutoOpen = {
-        Enabled = false,
-        Items = {},
-    },
+    local ClientData = fsys("ClientData")
+    local RouterClient = fsys("RouterClient")
 
-    Webhook = {
-        Enabled = false,
-        URL = "",
-        PetUnlock = {
-            Enabled = false,
-            URL = "",
-            FilterRarities = {},
-        },
-    },
+    assert(ClientData and RouterClient,
+        "ClientData / RouterClient unavailable")
 
-    AccountManager = {
-        Enabled = false,
-        Tool = "",
-        FarmSync = {
-            Action = "completed",
-            FromFolderId = "",
-            ToFolderId = "",
-            ChangeWithoutReplacement = false,
-            ConfigId = nil,
-            ApiKey = "",
-        },
-        FarmerV5 = {
-            ApiKey = "",
-            Action = "swap",
-            Option = 1,
-        },
-        Triggers = {
-            AfterTradeComplete = false,
-            MinBucks = 0,
-            MinPotions = 0,
-        },
-    },
-}
+    local function hasLicense()
+        if type(ClientData.get_data) ~= "function" then
+            return nil
+        end
 
--- Enter your own Mass Farm key
-getgenv().scriptkey = "SrWdjOZSKnynbBCxLZHVrnuNPISdXHRP"
+        local ok, raw = pcall(function()
+            return ClientData.get_data()
+        end)
 
--- Load ZekeHub
-loadstring(game:HttpGet(
-    "https://zekehub.com/scripts/AdoptMe/MassFarm.lua"
-))()
+        if not ok or type(raw) ~= "table" then
+            return nil
+        end
+
+        local own = raw[player.Name]
+            or raw[tostring(player.UserId)]
+            or raw[player.UserId]
+
+        if type(own) ~= "table" then
+            return nil
+        end
+
+        local inventory = own.inventory
+        local toys = type(inventory) == "table"
+            and inventory.toys
+
+        if type(toys) ~= "table" then
+            return nil
+        end
+
+        for _, toy in pairs(toys) do
+            if type(toy) == "table"
+                and toy.id == "trade_license" then
+                return true
+            end
+        end
+
+        return false
+    end
+
+    local function fire(route, ...)
+        local remote = RouterClient.get(route)
+        assert(remote, "Remote unavailable: " .. route)
+        remote:FireServer(...)
+    end
+
+    -- Wait for inventory
+    for _ = 1, 30 do
+        if hasLicense() ~= nil then
+            break
+        end
+        task.wait(0.5)
+    end
+
+    -- Skip accounts with license
+    if hasLicense() == true then
+        log("SUCCESS", "License already owned")
+        return
+    end
+
+    for attempt = 1, 2 do
+        log("INFO", "Quiz attempt " .. attempt .. "/2")
+
+        local ok, err = pcall(function()
+            fire(
+                "SettingsAPI/SetBooleanFlag",
+                "has_talked_to_trade_quest_npc",
+                true
+            )
+
+            task.wait(1)
+
+            -- Start license quiz
+            fire("TradeAPI/BeginQuiz")
+
+            local questions
+
+            for _ = 1, 20 do
+                local found, state = pcall(function()
+                    return ClientData.get(
+                        "trade_license_quiz_manager"
+                    )
+                end)
+
+                if found
+                    and type(state) == "table"
+                    and type(state.quiz) == "table"
+                    and #state.quiz > 0 then
+
+                    questions = state.quiz
+                    break
+                end
+
+                task.wait(0.5)
+            end
+
+            assert(questions, "Quiz data unavailable")
+
+            log("INFO", "Questions: " .. #questions)
+
+            -- Submit answers from game data
+            for index, question in ipairs(questions) do
+                assert(
+                    type(question) == "table"
+                    and question.answer ~= nil,
+                    "Missing answer: " .. index
+                )
+
+                fire(
+                    "TradeAPI/AnswerQuizQuestion",
+                    question.answer
+                )
+
+                log("INFO", "Answer sent: " .. index)
+                task.wait(1)
+            end
+        end)
+
+        if not ok then
+            log("ERROR", err)
+        end
+
+        -- Verify license in inventory
+        for _ = 1, 12 do
+            if hasLicense() == true then
+                log(
+                    "SUCCESS",
+                    "Trade License verified in Toys"
+                )
+                return
+            end
+            task.wait(1)
+        end
+
+        if attempt < 2 then
+            task.wait(2)
+        end
+    end
+
+    log(
+        "FAIL",
+        "License not verified. Check inventory."
+    )
+end
+
+local ok, err = pcall(main)
+
+if not ok then
+    log("ERROR", err)
+end
+
+env.__GetTradeLicenseRunning = false
